@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
+from fastapi.middleware.cors import CORSMiddleware
 
 # Define the data model for input
 class Question(BaseModel):
@@ -50,6 +51,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# ✅ Add CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Your frontend origin
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows GET, POST, PUT, DELETE, etc.
+    allow_headers=["*"],  # Allows all headers
+)
+
 @app.post("/get_answer/")
 async def get_answer(question: Question):
     """Receives a question and returns the closest matching answer."""
@@ -61,9 +71,9 @@ async def get_answer(question: Question):
     # Search for the most relevant answer
     distances, indices = sentence_index.search(query_vector, 1)
     best_index = indices[0][0]
-
+    print(distances[0][0])
     # ✅ Normalize confidence & round to 2 decimal places
-    confidence = round(float((distances[0][0] + 1) / 2) * 100, 2)
+    confidence = round(float(100-distances[0][0]), 2)
 
     print(f"Best match: {answers[best_index]['sentence']}, Confidence: {confidence}%")
 
